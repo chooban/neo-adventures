@@ -114,4 +114,9 @@ mv neo-devpack-java-2.3.0.jar /usr/share/dotnet/org.neo.smartcontract.framework.
 And try to transpile the class file again...and I have an avm file! Fantastic! My blockchain is still syncing, so I
 guess attempting to run it will have to wait for another evening.
 
-tbc
+# TBD
+
+* Although there's a closed issue saying the GUI is not supported on Linux, there is mention of installing Linux dev libraries in the 
+readme, so that needs investigating. In the case that it's not compilable, I'll have to set up a Windows VM and then try to sniff 
+network traffic to reverse engineer something for putting contracts on the blockchain.
+* Having a self contained executable for the AVM compiler (presumably becoming NVM?) means I can have a better workflow
