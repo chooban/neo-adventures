@@ -29,12 +29,16 @@ hard drive filled up and I realised I'd made two mistakes: small hard drive, and
 
 ## Installing .Net
 
-At this point I have used 3.7G on the VM and have 18G free. The instructions for compiling the Neo CLI on linux are
-straightforward: `dotnet build`. However, I don't have the `dotnet` command.
+The instructions for compiling the Neo CLI on linux are straightforward: `dotnet build`. However, I don't have the `dotnet`
+command.
 
 I'm going to avoid tarballs as much as I can to make life easy and apt-friendly, so I'll follow [the instructions from
 Microsoft](https://www.microsoft.com/net/core#linuxubuntu), stopping at the point where it tells me to install the 2.0
-SDK. Instead, I'll install the earlier one as described in the readme. All this has installed another 400M on the VM.
+SDK. Instead, I'll install the earlier one as described in the readme:
+
+```
+sudo apt-get update; sudo apt-get install dotnet-dev-1.1.4
+```
 
 Time for `dotnet restore` in the `neo-cli` directory...it starts downloading and about 1G later, it's finished. So I
 `dotnet build` and a few seconds later it tells me the build succeeded. So now it's `dotnet neo-cli.dll`.
