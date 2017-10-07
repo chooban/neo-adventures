@@ -123,12 +123,62 @@ I'd like a standalone compiler rather than needing the `dotnet` command, so some
 ```
 $> dotnet restore
 $> dotnet publish -c release -r ubuntu.16.04-x64<enter>
+Microsoft (R) Build Engine version 15.3.409.57025 for .NET Core
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+  neoj -> /home/ross/src/neo-compiler/neoj/bin/release/netcoreapp1.1/ubuntu.16.04-x64/neoj.dll
 ```
+
 This tells me it's created an executable, but if I copy it into my current working directory and attempt to run it on its
 own, I get an error:
 
+```
+$> ./neoj<enter>
+Failed to resolve library symbol hostfxr_main, error: ./neoj: undefined symbol: hostfxr_main
+Segmentation fault (core dumped)
+```
 
+dpkg tells me I have that installed (`dotnet-hostfxr-1.1.0`) so presumably it's not on a path (these kind of things are on the
+edge of my knowledge).
 
+```
+$> dpkg -L dotnet-hostfxr-1.1.0
+/.
+/usr
+/usr/share
+/usr/share/doc
+/usr/share/doc/dotnet-hostfxr-1.1.0
+/usr/share/doc/dotnet-hostfxr-1.1.0/changelog.Debian.gz
+/usr/share/doc/dotnet-hostfxr-1.1.0/copyright
+/usr/share/dotnet
+/usr/share/dotnet/host
+/usr/share/dotnet/host/fxr
+/usr/share/dotnet/host/fxr/1.1.0
+/usr/share/dotnet/host/fxr/1.1.0/libhostfxr.so <--- Here it is
+```
+
+Does it have that symbol?
+
+```
+$> nm --dynamic /usr/share/dotnet/host/fxr/1.1.0/libhostfxr.so | grep hostfxr_main
+000000000007ea20 T hostfxr_main
+```
+
+So I need that on the `LD_LIBRARY_PATH`? Okay, but let's not make it permanent just yet.
+
+```
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/share/dotnet/host/fxr/1.1.0
+```
+
+And...
+
+```
+$> ./neoj<enter>
+Failed to resolve library symbol hostfxr_main, error: ./neoj: undefined symbol: hostfxr_main
+Segmentation fault (core dumped)
+```
+
+Bugger. At least I can still use the DLL version, or leave that executable in the directory next to the included .so files.
 
 ## Writing Some Java
 
