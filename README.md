@@ -37,8 +37,14 @@ Microsoft](https://www.microsoft.com/net/core#linuxubuntu), stopping at the poin
 SDK. Instead, I'll install the earlier one as described in the readme:
 
 ```
-sudo apt-get update; sudo apt-get install dotnet-dev-1.1.4
+curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
+sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-xenial-prod xenial main" > /etc/apt/sources.list.d/dotnetdev.list'
+sudo apt-get update
+sudo apt-get install dotnet-dev-1.1.4
 ```
+
+### NEO CLI
 
 Time for `dotnet restore` in the `neo-cli` directory...it starts downloading and about 1G later, it's finished. So I
 `dotnet build` and a few seconds later it tells me the build succeeded. So now it's `dotnet neo-cli.dll`.
@@ -78,20 +84,51 @@ neo>show node
 ...
 ```
 
-Excellent! That's going to take a while to sync up, so time to get the Java side of things installed. I'll just go with the OpenJDK for now: `sudo apt-get install default-jdk`.
+Excellent! That's going to take a while to sync up, so time to get other things installed. 
 
-I'll also need to clone the [neo-compiler](https://github.com/neo-project/neo-compiler) and build the Java compiler as
-it's required for turning Java class files into a Neo contract. This is another C# project so clone, change into
-director, `dotnet restore` and then `dotnet publish`. 
+### NEO Devpack Java 
 
-That gives me a DLL, though the docs suggest it should be an exe. No matter, I try running it and it tells me I need a
-class file. But first, [this looks interesting](https://github.com/neo-project/neo-devpack-java). Clone, install maven,
+These are the libraries needed for writing your contract in Java. I'll just go with the OpenJDK for now: `sudo apt-get install default-jdk`.
+
+[Clone](https://github.com/neo-project/neo-devpack-java). Clone, install maven,
 attempt to package...and character encoding errors in the source files. Surprisingly, I wrote a command to help me with
 identifying character sets some time ago, and tonight it came in handy again. The project uses `x-mswin-936` for its
 encoding.
 
 Add the configuration to the pom file, `mvn package` and...I have a jar file! This is clearly going to be needed for
 compiling against.
+
+I've forked the devpack project and there's an [ongoing PR](https://github.com/neo-project/neo-devpack-java/pull/1) as I clumsily attempt to fix the encoding issues.
+
+### NEO Compiler
+
+I'll also need to clone the [neo-compiler](https://github.com/neo-project/neo-compiler) and build the Java compiler as
+it's required for turning Java class files into a Neo contract. This is another C# project so clone, change into
+director, `dotnet restore` and then `dotnet publish`. 
+
+That gives me a DLL, though the docs suggest it should be an exe. No matter, I try running it and it tells me I need a
+class file. It can't find `org.neo.smartcontract.framework.jar` in `/usr/share/dotnet/`. Looking at the source for the
+compiler, that's a hardcoded filename, so I need to put something there. The devpack didn't output a jar by that name, but
+if I move it into place anyway...
+
+```
+mv neo-devpack-java-2.3.0.jar /usr/share/dotnet/org.neo.smartcontract.framework.jar
+```
+
+Now if I run the compiler it just complains about not being given a contract class to compile. 
+
+I'd like a standalone compiler rather than needing the `dotnet` command, so some further work is required. Another 
+[project fork](https://github.com/chooban/neo-compiler) and I've added Ubuntu as a target runtime. 
+
+```
+$> dotnet restore
+$> dotnet publish -c release -r ubuntu.16.04-x64<enter>
+```
+This tells me it's created an executable, but if I copy it into my current working directory and attempt to run it on its
+own, I get an error:
+
+
+
 
 ## Writing Some Java
 
@@ -106,17 +143,8 @@ Anyway, it's complaining about not being able to find `FunctionCode` to import, 
 there isn't one there. There is, however, `SmartContract` so I change it to that, fix the other compiler errors (I think
 this might be copied and pasted C#) and the red lines go away.
 
-Drop back to the terminal, move to the Neo compile directory and attempt to pass my new class file to the DLL. Boom! It
-can't find `org.neo.smartcontract.framework.jar` in `/usr/share/dotnet/`. Looking at the source for the compiler, that's
-a hardcoded filename, so I need to put something there. I don't have a jar by that name, but I do have the one I
-compiled the Java against, so...
-
-```
-mv neo-devpack-java-2.3.0.jar /usr/share/dotnet/org.neo.smartcontract.framework.jar
-```
-
-And try to transpile the class file again...and I have an avm file! Fantastic! My blockchain is still syncing, so I
-guess attempting to run it will have to wait for another evening.
+Drop back to the terminal, move to the Neo compile directory and attempt to pass my new class file to the DLL. Boom! 
+I have an avm file! Fantastic! 
 
 # TBD
 
